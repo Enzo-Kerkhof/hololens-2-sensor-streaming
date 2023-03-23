@@ -8,7 +8,8 @@ using TMPro;
 public class hl2ss : MonoBehaviour
 {
 #if WINDOWS_UWP
-
+    [DllImport("hl2ss")]
+    private static extern void SetWorldCoordinateSystem(Guid guid, float[] unityOriginToNodeTransform, bool useUnityOrigin);
     [DllImport("hl2ss")]
     private static extern void InitializeStreams(uint enable);
     [DllImport("hl2ss")]
@@ -26,6 +27,10 @@ public class hl2ss : MonoBehaviour
     [DllImport("hl2ss")]
     private static extern void GetLocalIPv4Address(byte[] data, int size);
 #else
+    private void SetWorldCoordinateSystem(Guid guid, float[] unityOriginToNodeTransform, bool useUnityOrigin)
+    { 
+    }
+
     private void InitializeStreams(uint enable)
     {
     }
@@ -96,6 +101,9 @@ public class hl2ss : MonoBehaviour
     private bool m_mode;
     private int m_last_key;
 
+    private Guid unityOriginGuid;
+    private float[] unityOriginToNodeTransform;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -104,12 +112,47 @@ public class hl2ss : MonoBehaviour
         m_loop = false;
         m_mode = false;
 
+        // set the native world coordinate system using unity origin
+        SetWorldCoordinateSystem(unityOriginGuid, unityOriginToNodeTransform, true);
+
         if (!skipInitialization) { InitializeStreams((enableRM ? 1U : 0U) | (enablePV ? 2U : 0U) | (enableMC ? 4U : 0U) | (enableRC ? 16U : 0U) | (enableSM ? 32U : 0U) | (enableSU ? 64U : 0U)); }
 
         byte[] ipaddress = new byte[16 * 2];
         GetLocalIPv4Address(ipaddress, ipaddress.Length);
         string ip = System.Text.Encoding.Unicode.GetString(ipaddress);
         DebugMessage(string.Format("UNITY: Local IP Address is: {0}", ip));
+    }
+
+    private void Awake()
+    {
+        // Create unity reference coordinate system and get its GUID, Note: only works with unity 2019 or older
+#if WINDOWS_UWP
+        IntPtr WorldOriginPtr = UnityEngine.XR.WSA.WorldManager.GetNativeISpatialCoordinateSystemPtr();
+        var unityWorldOrigin = Marshal.GetObjectForIUnknown(WorldOriginPtr) as Windows.Perception.Spatial.SpatialCoordinateSystem;
+        var interopReferenceFrame = Windows.Perception.Spatial.Preview.SpatialGraphInteropPreview.TryCreateFrameOfReference(unityWorldOrigin);
+        unityOriginGuid = interopReferenceFrame.NodeId;
+        var OriginToNodeTransform = interopReferenceFrame.CoordinateSystemToNodeTransform;
+
+        {
+            unityOriginToNodeTransform = new float[16];
+            unityOriginToNodeTransform[0] = OriginToNodeTransform.M11;
+            unityOriginToNodeTransform[1] = OriginToNodeTransform.M12;
+            unityOriginToNodeTransform[2] = OriginToNodeTransform.M13;
+            unityOriginToNodeTransform[3] = OriginToNodeTransform.M14;
+            unityOriginToNodeTransform[4] = OriginToNodeTransform.M21;
+            unityOriginToNodeTransform[5] = OriginToNodeTransform.M22;
+            unityOriginToNodeTransform[6] = OriginToNodeTransform.M23;
+            unityOriginToNodeTransform[7] = OriginToNodeTransform.M24;
+            unityOriginToNodeTransform[8] = OriginToNodeTransform.M31;
+            unityOriginToNodeTransform[9] = OriginToNodeTransform.M32;
+            unityOriginToNodeTransform[10] = OriginToNodeTransform.M33;
+            unityOriginToNodeTransform[11] = OriginToNodeTransform.M34;
+            unityOriginToNodeTransform[12] = OriginToNodeTransform.M41;
+            unityOriginToNodeTransform[13] = OriginToNodeTransform.M42;
+            unityOriginToNodeTransform[14] = OriginToNodeTransform.M43;
+            unityOriginToNodeTransform[15] = OriginToNodeTransform.M44;
+        }
+#endif
     }
 
     // Update is called once per frame

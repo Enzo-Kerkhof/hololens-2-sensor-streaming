@@ -26,14 +26,25 @@
 // Functions
 //-----------------------------------------------------------------------------
 
+UNITY_EXPORT
+void SetWorldCoordinateSystem(GUID guid, float* unityOriginToNodeTransform, bool useUnityOrigin)
+{
+    winrt::Windows::Foundation::Numerics::float4x4 originToNodeTrasform;
+    {
+        originToNodeTrasform.m11 = unityOriginToNodeTransform[0]; originToNodeTrasform.m21 = unityOriginToNodeTransform[4]; originToNodeTrasform.m31 = unityOriginToNodeTransform[8]; originToNodeTrasform.m41 = unityOriginToNodeTransform[12];
+        originToNodeTrasform.m12 = unityOriginToNodeTransform[1]; originToNodeTrasform.m22 = unityOriginToNodeTransform[5]; originToNodeTrasform.m32 = unityOriginToNodeTransform[9]; originToNodeTrasform.m42 = unityOriginToNodeTransform[13];
+        originToNodeTrasform.m13 = unityOriginToNodeTransform[2]; originToNodeTrasform.m23 = unityOriginToNodeTransform[6]; originToNodeTrasform.m33 = unityOriginToNodeTransform[10]; originToNodeTrasform.m43 = unityOriginToNodeTransform[14];
+        originToNodeTrasform.m14 = unityOriginToNodeTransform[3]; originToNodeTrasform.m24 = unityOriginToNodeTransform[7]; originToNodeTrasform.m34 = unityOriginToNodeTransform[11]; originToNodeTrasform.m44 = unityOriginToNodeTransform[15];
+    }
+    Locator_Initialize(guid, originToNodeTrasform, useUnityOrigin);
+}
+
 // OK
 UNITY_EXPORT
 void InitializeStreams(uint32_t enable)
 {
     InitializeSockets();
     MFStartup(MF_VERSION);
-
-    Locator_Initialize();
 
     if (enable & HL2SS_ENABLE_RM) { ResearchMode_Initialize(); }
     if (enable & HL2SS_ENABLE_PV) { PersonalVideo_Initialize(); }
