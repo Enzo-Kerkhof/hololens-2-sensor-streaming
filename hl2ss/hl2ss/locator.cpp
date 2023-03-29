@@ -34,6 +34,16 @@ static void Locator_OnLocatabilityChanged(winrt::Windows::Perception::Spatial::S
 }
 
 // OK
+void Locator_Initialize()
+{
+    g_locator = SpatialLocator::GetDefault();   
+    g_locator.LocatabilityChanged(Locator_OnLocatabilityChanged);   
+    g_locatability = g_locator.Locatability();
+    g_referenceFrame = g_locator.CreateStationaryFrameOfReferenceAtCurrentLocation();   
+    g_attachedReferenceFrame = g_locator.CreateAttachedFrameOfReferenceAtCurrentHeading(); 
+}
+
+// OK
 void Locator_Initialize(winrt::guid guid, winrt::Windows::Foundation::Numerics::float4x4 unityOriginToNodeTransform, bool useUnityOrigin)
 {
     if (useUnityOrigin)
@@ -71,5 +81,10 @@ float4x4 Locator_GetTransformTo(SpatialCoordinateSystem const& src, SpatialCoord
 // OK
 SpatialCoordinateSystem Locator_GetWorldCoordinateSystem(PerceptionTimestamp const& ts)
 {
-    return (g_referenceFrameCoordinateSystem != nullptr) ? g_referenceFrameCoordinateSystem : g_attachedReferenceFrame.GetStationaryCoordinateSystemAtTimestamp(ts);
+    if (g_referenceFrameCoordinateSystem != nullptr)
+        return g_referenceFrameCoordinateSystem;
+    else if (g_locatability == SpatialLocatability::PositionalTrackingActive)
+        return g_referenceFrame.CoordinateSystem();
+    else
+        return g_attachedReferenceFrame.GetStationaryCoordinateSystemAtTimestamp(ts);
 }
