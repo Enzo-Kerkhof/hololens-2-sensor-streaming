@@ -127,8 +127,12 @@ public class hl2ss : MonoBehaviour
     {
         // Create unity reference coordinate system and get its GUID, Note: only works with unity 2019 or older
 #if WINDOWS_UWP
+    #if UNITY_2020_3_OR_NEWER
+        var unityWorldOrigin = Windows.Perception.Spatial.SpatialLocator.GetDefault().CreateStationaryFrameOfReferenceAtCurrentLocation().CoordinateSystem;
+    #else
         IntPtr WorldOriginPtr = UnityEngine.XR.WSA.WorldManager.GetNativeISpatialCoordinateSystemPtr();
         var unityWorldOrigin = Marshal.GetObjectForIUnknown(WorldOriginPtr) as Windows.Perception.Spatial.SpatialCoordinateSystem;
+    #endif
         var interopReferenceFrame = Windows.Perception.Spatial.Preview.SpatialGraphInteropPreview.TryCreateFrameOfReference(unityWorldOrigin);
         unityOriginGuid = interopReferenceFrame.NodeId;
         var OriginToNodeTransform = interopReferenceFrame.CoordinateSystemToNodeTransform;
